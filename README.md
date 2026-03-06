@@ -220,7 +220,18 @@ If you use this repository in your research, please cite:
 
 ---
 
-## License
+## Acknowledgments
 
-The license of this repository will be updated to match the final publication.  
-Please refer to the `LICENSE` file (if provided) for the latest terms.
+We would like to acknowledge **Xinru Li** and **Yuanyuan Qi** for their help with demo visualization and figure design, as well as **Bohao Zhang**, **Wenxiang Liu**, and **Kecheng Tang** for helpful discussions regarding writing. We also appreciate the input of **Wenxuan Huang** in research exchanges, and thank **Changbo Wang** and **Gaoqi He** for their supervisory advice throughout the project.
+
+This work is partially supported by:
+
+- Natural Science Foundation of China (Grant No. 62472178)
+- Open Projects Program of State Key Laboratory of Multimodal Artificial Intelligence Systems (No. MAIS2024111)
+- Fundamental Research Funds for the Central Universities
+- Science and Technology Commission of Shanghai Municipality (Grant No. 25511107200)
+
+## Contact
+
+- **Technical questions:** please [open an issue](https://github.com/ripemangobox/ReactDance/issues).
+- **Other inquiries:** [ripemangobox@gmail.com](mailto:ripemangobox@gmail.com)
