@@ -1,0 +1,148 @@
+HFSQ_config: ./results/training/HFSQ/lightning_logs/hfsq128_512_q2/hfsq128_512_q2.yaml
+
+# prpe: part-repeat positional encoding
+
+RANDOM_SEED: 325514
+expname: ReactDance
+structure_generate:
+    generator_name: ReactDance
+    ReactDance:
+        gaussian: GaussianDiffusion
+        denoiser: ReactDance_Denoiser
+        beta_scheduler: cosine
+        prior_mode: all_quantizeds      # choice [embs, all_embs, all_quantizeds]
+        attn_mask_type: interval           # choice [full, casual, diag, interval, triangle_interval]
+        use_rotary: False
+        music_time_merged: True
+        pos_allq_shape: [8, 2, 48]
+        token_block_size: 60
+        latent_dim: 1024
+        latent_loss_weight: [2.0, 1.0]
+        clip_scaler: 100.0
+        loss_fn: l1
+        normalizer_calculator: Z_SCORE
+        guidance_drop_mode: zero
+
+        geo_loss_checklist:
+            # Geometry Part
+            use_GEO: True
+            w_recon: 0.1
+            w_vel: 0.1
+            w_acc: 0.1
+
+            w_FC: 0.1
+            w_RO: 0.01
+            w_DM: 0.05
+            w_JA: 0.05
+            w_TR_recon: 0.05
+            w_TR_vel: 0.05
+            w_TR_acc: 0.05
+
+        unified_params:
+            n_cond: 512
+            n_embd: 768
+            ff_size: 2048
+            spatial_ds_rate: 1.0
+            attn_pdrop: 0.1                  # 注意力dropout
+            embd_pdrop: 0.1                  # Embedding dropout
+            resid_pdrop: 0.1                 # 残差dropout
+            block_backend: SelfAttentionBlock
+
+        m_cond_drop_prob: 0.1
+        p_cond_drop_prob: 0.1
+        
+        gpt:
+            dropout: 0.1
+            n_layer: 8
+            n_head: 8
+            activation: gelu
+            mask_type: mix
+            sa_backend: QKNORMSA
+            ca_backend: QKNORMCA
+            
+        music_trans:
+            n_cond: 54
+            n_layer: 2
+            temp_ds_rate: 4
+            n_head: 8
+        leader_pos_trans:
+            n_cond: 66
+            n_layer: 2
+            temp_ds_rate: 4
+            n_head: 8
+
+data:
+    music_dim: 54
+    num_joints: 22
+    train:
+        music_root: ./data_lazy/music
+        data_root: ./data_lazy/motion
+        move: 4
+        dtype: both
+        split: train
+        interval: 240
+        batch_size: 128
+        shuffle: True
+    test:
+        music_root: ./data_lazy/music
+        data_root: ./data_lazy/motion
+        music_source: ./data_lazy/music/mp3/all/
+        checkpoint: null    # put trained stage one ckpt here!
+        move: 32
+        dtype: both
+        split: test
+        interval: 240 # interval of val set equals train set's, while the test set interval is set to None to use full length evaluation and sampling
+        batch_size: 128
+
+Train:
+    log_steps: 500
+    last_iter: 0
+    accumulate_grad_batches: 1
+    resume_from_checkpoint: null    # put resume training ckpt here!
+    checkpoint_interval: 50  # ckpt saving frequency
+    use_amp: True
+    use_pred_as_target: True
+    max_clip_norm: 1
+    use_scaler: False
+
+    optimizer:
+        type: AdamW
+        AdamW:
+            lr: 2e-4 # 0.00003
+            betas: [0.5, 0.999]
+            weight_decay: 0.0002
+        Lion:
+            lr: 2e-5 # 0.00003
+            betas: [0.9, 0.99]
+            weight_decay: 0.002
+        Adan:
+            lr: 2e-4 # 0.00003
+            betas: [0.98, 0.92, 0.99]
+            weight_decay: 0.0002
+            foreach: False
+
+    scheduler:
+        constant_lr: False
+        type: LRFactor
+        total_epochs: 501
+        LRFactor:
+            decay_factor: 0.998
+        CosineWarmupScheduler:
+            warmup: 0
+            cosine_epochs: 501  # control the length of cos cycle
+            stable_epochs: 0
+            eta_min: 1e-5
+            default_min_lr: 1e-5
+
+music_ds_rate: 4
+
+### pl config part in training'''
+Trainer:
+    accelerator: gpu
+    devices: [0]
+    default_root_dir: results/training/ReactDance/
+    deterministic: false
+    fast_dev_run: false
+    min_epochs: 1
+    precision: 32
+    
