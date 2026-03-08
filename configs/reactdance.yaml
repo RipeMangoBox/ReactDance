@@ -78,7 +78,7 @@ data:
         music_root: ./data_lazy/music
         data_root: ./data_lazy/motion
         move: 4
-        dtype: both
+        dtype: ['pos3d']
         split: train
         interval: 240
         batch_size: 128
@@ -89,7 +89,7 @@ data:
         music_source: ./data_lazy/music/mp3/all/
         checkpoint: null    # put trained stage one ckpt here!
         move: 32
-        dtype: both
+        dtype: ['pos3d']
         split: test
         interval: 240 # interval of val set equals train set's, while the test set interval is set to None to use full length evaluation and sampling
         batch_size: 128

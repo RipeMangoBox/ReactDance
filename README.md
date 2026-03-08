@@ -50,9 +50,9 @@ conda env update -f environment.yml
 
 Please make sure other dependencies are installed according to your package management setup (e.g., `pip install -r requirements.txt` if provided).
 
-## Download the DD100 Dataset
+## Download the Dataset
 
-You can download the dataset from the [Google Drive link](https://drive.google.com/file/d/1MePdRCqXLri0o1eIAMYPqxZFH5Ocge18/view?usp=sharing), or follow [Duolando](https://github.com/lisiyao21/Duolando) to process the data yourself and rename the directory as `data_lazy`. Put `data_lazy` in the working directory:
+You can download the dataset from the [Google Drive link](https://drive.google.com/file/d/18ko8x7whkR0M0bc19AQQNsvp5jmnNDSe/view?usp=drive_link), or follow [Duolando](https://github.com/lisiyao21/Duolando) to process the data yourself and rename the directory as `data_lazy`. Put `data_lazy` in the working directory:
 
 ```text
 ReactDance

@@ -70,7 +70,7 @@ data:
         data_root: ./data_lazy/motion
         shuffle: True
         move: 4
-        dtype: both
+        dtype: ['pos3d']
         split: train
         interval: 240
         batch_size: 512
@@ -81,7 +81,7 @@ data:
         music_source: ./data_lazy/music/mp3/all/
         checkpoint: null    # put trained stage one ckpt here!
         move: 4
-        dtype: both
+        dtype: ['pos3d']
         split: test
         interval: None  # set interval to None to use full length evaluation and reconstruction
         batch_size: 1

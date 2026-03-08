@@ -116,7 +116,6 @@ class DD100lfAll(Dataset):
             dtypes = dtype
         else:
             dtypes = [dtype]
-        self.dtype = dtype
         self.expansion = expansion
         self.names = []
         self.rotate_prob = rotate_prob
@@ -215,14 +214,14 @@ class DD100lfAll(Dataset):
 
         # align the length of pos3d and music
         for i in range(len(self.dances['pos3dl'])):
-            min_len = min(len(self.dances['pos3dl'][i]), len(self.dances['pos3df'][i]), len(self.dances['rot6dl'][i]), len(self.dances['rot6df'][i]), len(self.dances['music'][i]))
+            min_len = min(len(self.dances['pos3dl'][i]), len(self.dances['pos3df'][i]), len(self.dances['music'][i]))
             min_len = min_len // 4 * 4
             self.dances['pos3dl'][i] = self.dances['pos3dl'][i][:min_len]
             self.dances['pos3df'][i] = self.dances['pos3df'][i][:min_len]
             self.dances['music'][i] = self.dances['music'][i][:min_len]
-            if self.dances['rot6dl'][i] is not None:
+            if self.dances['rot6dl']:
                 self.dances['rot6dl'][i] = self.dances['rot6dl'][i][:min_len]
-            if self.dances['rot6df'][i] is not None:
+            if self.dances['rot6df']:
                 self.dances['rot6df'][i] = self.dances['rot6df'][i][:min_len]
 
         # 创建统一的索引列表
