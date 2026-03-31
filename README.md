@@ -1,10 +1,13 @@
-# ReactDance: Hierarchical Representation for High-Fidelity and Coherent Long-Form Reactive Dance Generation (ICLR 2026)
-
 <div align="center">
-  <img src="./pictures/ReactDance_Logo.png" alt="ReactDance Logo" height="100">
+  <img src="./pictures/ReactDance_Logo.png" alt="ReactDance Logo" height="80">
+  <h1>ReactDance: Hierarchical Representation for High-Fidelity and Coherent Long-Form Reactive Dance Generation (ICLR 2026)</h1>
 </div>
 
-[![arXiv](https://img.shields.io/badge/arXiv-2505.05589-b31b1b.svg)](https://arxiv.org/abs/2505.05589) [![Project Page](https://img.shields.io/badge/Project_Page-ReactDance-blue.svg)](https://ripemangobox.github.io/ReactDance/) [![Visitor](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FRipeMangoBox%2FReactDance&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Visitors&edge_flat=false)](https://hits.seeyoufarm.com)
+<div align="center">
+
+[![arXiv](https://img.shields.io/badge/arXiv-2505.05589-b31b1b.svg)](https://arxiv.org/abs/2505.05589) [![Project Page](https://img.shields.io/badge/Project_Page-ReactDance-blue.svg)](https://ripemangobox.github.io/ReactDance/) [![Visitors](https://visitor-badge.laobi.icu/badge?page_id=RipeMangoBox.ReactDance)](https://github.com/RipeMangoBox/ReactDance)
+
+</div>
 
 ![ReactDance Poster](./pictures/Poster.png)
 
