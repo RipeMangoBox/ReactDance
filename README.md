@@ -47,7 +47,6 @@ conda env update -f environment.yml
     ```bash
     conda install -c conda-forge x264 ffmpeg -c conda-forge --override-channels
     ```
-
   - Install MoviePy:
 
     ```bash
@@ -136,14 +135,13 @@ results/training
 
 ### Stage One: HFSQ Reconstruction
 
-1. Put your HFSQ checkpoint in `data-test-checkpoint` in  
-   `results/training/HFSQ/lightning_logs/hfsq128_512_q2/hfsq128_512_q2.yaml`.
+1. Put your HFSQ checkpoint in `data-test-checkpoint` in`results/training/HFSQ/lightning_logs/hfsq128_512_q2/hfsq128_512_q2.yaml`.
 2. Set it as `HFSQ_config` in `configs/reactdance.yaml`.
 
 Then run:
 
 ```bash
-python hfsq.py --config ./configs/hfsq128_512_q2.yaml --mode duet_sample
+python hfsq.py --config ./`results/training/HFSQ/lightning_logs/hfsq128_512_q2/hfsq128_512_q2.yaml` --mode duet_sample
 ```
 
 Then the reconsturcted motion files and visualizations are available in
@@ -156,13 +154,13 @@ results/generated/HFSQ/hfsq128_512_q2/epoch_200.ckpt/samples/duet/
 
 ### Stage Two: ReactDance Sampling
 
-1. Put your ReactDance checkpoint in `data-test-checkpoint` in  
+1. Put your ReactDance checkpoint in `data-test-checkpoint` in
    `results/training/ReactDance/lightning_logs/reactdance/reactdance.yaml`.
 
 Then run:
 
 ```bash
-python reactdance.py --config ./configs/reactdance.yaml --mode sample
+python reactdance.py --config ./`results/training/ReactDance/lightning_logs/reactdance/reactdance.yaml` --mode sample
 ```
 
 Then the sampled motion files and visualizations are available in
@@ -182,14 +180,15 @@ results/generated/ReactDance/reactdance/epoch_500.ckpt/samples/
 `utils/metrics.py` evaluates **solo** motion quality on `pos3d_npy` folders (FID_k / FID_g/ DIV_k / DIV_g / BA).
 
 1. Edit the following variables in `utils/metrics.py` (near the bottom):
+
    - `gt_root` (default: `data_lazy/motion/pos3d/test`)
    - `music_root` (default: `data_lazy/music/feature/test`)
    - `pred_roots`: a list of `pos3d_npy` folders you want to evaluate.
 
    The script already contains example entries:
+
    - `results/generated/HFSQ/hfsq128_512_q2/epoch_200.ckpt/samples/duet/pos3d_npy` (HFSQ reconstruction)
    - `results/generated/ReactDance/reactdance/epoch_500.ckpt/samples/pos3d_npy` (ReactDance sampling)
-
 2. Run:
 
 ```bash
@@ -201,9 +200,9 @@ python utils/metrics.py
 `utils/metrics_duet.py` evaluates **duet interaction** metrics on `pos3d_npy` folders (FID_cd / DIV_cd / MPJPE / MPJVE / Jitter / BE).
 
 1. Edit `gt_root` and `pred_roots` in `utils/metrics_duet.py` (near the bottom). Each `pred_root` should point to a `pos3d_npy` folder that contains paired files:
+
    - follower: `*_00.npy`
    - leader: `*_01.npy`
-
 2. Run:
 
 ```bash
