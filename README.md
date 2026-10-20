@@ -57,49 +57,29 @@ Please make sure other dependencies are installed according to your package mana
 
 ## Download the Dataset
 
-Download `ReactDance_data_lazy_minimal.zip` from the [Hugging Face dataset repository](https://huggingface.co/datasets/RipeMangoBox/ReactDance), then extract it in the repository root:
+Download `ReactDance_data_lazy_minimal.zip` from [Hugging Face](https://huggingface.co/datasets/RipeMangoBox/ReactDance) and extract it in the repository root:
 
 ```bash
 unzip ReactDance_data_lazy_minimal.zip
 ```
 
-The archive contains the complete available train/test motion pairs (133 training pairs and 34 test pairs), precomputed music features, test-set MP3s used by visualization, and these dataset-level normalizers:
+The package includes 133 training pairs and 34 test pairs, precomputed music features, test-set MP3s, and duet metric features at `data_lazy/motion/pos3d/test/duet_features`.
 
-- `data_lazy/motion/pos3dl_normalizer.pt`
-- `data_lazy/motion/pos3df_normalizer.pt`
-- `data_lazy/music/music_normalizer.pt`
+All three dataset normalizers (`pos3dl_normalizer.pt`, `pos3df_normalizer.pt`, and `music_normalizer.pt`) are included. WAVs and checkpoint-dependent latent normalizers are omitted.
 
-Keep all three normalizers: they describe the input data and do not depend on a model checkpoint. The HFSQ latent normalizer at `results/training/HFSQ/lightning_logs/<run>/normalizers/<epoch>/normalizer.pt` depends on the HFSQ checkpoint and is excluded. Stage two automatically calculates it from the configured HFSQ checkpoint when it is missing.
-
-To keep the download small, WAVs, training MP3s (training uses the supplied music features), unused `rot6d` data, SMPL-X model files, duplicate music features/audio splits, evaluation caches, and pre-rendered GT videos are omitted. Test-set MP3s remain at `data_lazy/music/mp3/all` and `data_lazy/music/mp3/test` for the existing visualization paths. Alternatively, follow [Duolando](https://github.com/lisiyao21/Duolando) to process the data yourself and name the output directory `data_lazy`.
+ZIP size: **511,907,515 bytes**. SHA-256:
 
 ```text
-ReactDance
-  ├── configs
-  ├── data_lazy
-  │   ├── motion
-  │   │   ├── pos3d/{train,test}
-  │   │   ├── pos3dl_normalizer.pt
-  │   │   └── pos3df_normalizer.pt
-  │   └── music
-  │       ├── feature/{train,test}
-  │       ├── mp3/{all,test}
-  │       └── music_normalizer.pt
-  ├── datasets
-  ├── ...
+bf98f0b047ea1d4f09e7bac406e2d233baf58a97196e0480b98693a87360e1fb
 ```
 
-SHA-256 (`ReactDance_data_lazy_minimal.zip`, 511,884,543 bytes):
+To prepare the data yourself, follow [Duolando](https://github.com/lisiyao21/Duolando) and place the output in `data_lazy`.
 
-```text
-8f815d04a0ad03ddfe5370750714f77374a7e6632af8f658a049c7b080fa06ff
+Generate GT videos with:
+
+```bash
+python vis_gt.py
 ```
-
-- **GT Visualization**: Generate GT videos in `./data_lazy/motion/GT_vis` with:
-
-  ```bash
-  python vis_gt.py
-  ```
 
 ---
 
