@@ -23,198 +23,86 @@ ReactDance tackles long-form *reactive* dance generation, where a dancer respond
 
 ## Installation and Setup
 
-We recommend using **Python 3.8** and **PyTorch 2.1.0 with CUDA 12.1**.
+We recommend Linux, Python 3.10, and PyTorch 2.1 with CUDA 12.1.
 
 ```bash
 conda env create -f environment.yml
+conda activate reactdance-v2
 ```
 
-If the above command gets stuck when downloading or creating the environment, you can try the following manual steps:
-
-```bash
-conda create -n reactdance python=3.8
-conda activate reactdance
-conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=12.1 -c pytorch -c nvidia
-conda env update -f environment.yml
-```
-
-**Notes:**
-
-- **matplotlib version**: newer versions of matplotlib may not be compatible; `3.1.1` has been tested to work.
-- **Visualization dependencies**: ffmpeg and MoviePy are required for rendering videos.
-  - Install ffmpeg:
-
-    ```bash
-    conda install -c conda-forge x264 ffmpeg -c conda-forge --override-channels
-    ```
-  - Install MoviePy:
-
-    ```bash
-    conda install -c conda-forge moviePy==1.0.3 --override-channels
-    ```
-
-Please make sure other dependencies are installed according to your package management setup (e.g., `pip install -r requirements.txt` if provided).
+Run the commands below from the repository root. Paths in the configs and commands are relative to that root.
 
 ## Download the Dataset
 
-Download `ReactDance_data_lazy_minimal.zip` from [Hugging Face](https://huggingface.co/datasets/RipeMangoBox/ReactDance) and extract it in the repository root:
+Download `ReactDance_data_lazy_minimal.zip` from [Hugging Face](https://huggingface.co/datasets/RipeMangoBox/ReactDance) and extract it in the repository root. The resulting `data_lazy/` directory contains 133 training pairs, 34 test pairs, music features, test-set audio, and normalization statistics. The full distribution includes this directory.
+
+---
+
+## Download the Checkpoints
+
+| Model | Checkpoint |
+| --- | --- |
+| HFSQ | [hfsq.ckpt](https://huggingface.co/datasets/RipeMangoBox/ReactDance/resolve/main/checkpoints/hfsq.ckpt) |
+| ReactDance | [reactdance.ckpt](https://huggingface.co/datasets/RipeMangoBox/ReactDance/resolve/main/checkpoints/reactdance.ckpt) |
+
+The full distribution includes both files. To download them into a source checkout, run the following commands.
 
 ```bash
-unzip ReactDance_data_lazy_minimal.zip
-```
-
-The package includes 133 training pairs and 34 test pairs, precomputed music features, test-set MP3s, and duet metric features at `data_lazy/motion/pos3d/test/duet_features`.
-
-All three dataset normalizers (`pos3dl_normalizer.pt`, `pos3df_normalizer.pt`, and `music_normalizer.pt`) are included. WAVs and checkpoint-dependent latent normalizers are omitted.
-
-ZIP size: **511,907,515 bytes**. SHA-256:
-
-```text
-bf98f0b047ea1d4f09e7bac406e2d233baf58a97196e0480b98693a87360e1fb
-```
-
-To prepare the data yourself, follow [Duolando](https://github.com/lisiyao21/Duolando) and place the output in `data_lazy`.
-
-Generate GT videos with:
-
-```bash
-python vis_gt.py
+curl -fL --create-dirs -o results/lightning_log/HFSQ/version_0/hfsq.ckpt \
+  https://huggingface.co/datasets/RipeMangoBox/ReactDance/resolve/main/checkpoints/hfsq.ckpt
+curl -fL --create-dirs -o results/lightning_log/ReactDance/version_0/reactdance.ckpt \
+  https://huggingface.co/datasets/RipeMangoBox/ReactDance/resolve/main/checkpoints/reactdance.ckpt
 ```
 
 ---
 
 ## Training
 
-ReactDance training consists of **two stages**: first training the hierarchical feature VQ module (**HFSQ**), then training the full **ReactDance** model.
-
 ### Stage One: HFSQ
 
 ```bash
-python hfsq.py --config ./configs/hfsq128_512_q2.yaml --mode train
-```
-
-Once trained, the HFSQ result directory will look like:
-
-```text
-results/training
-    └── HFSQ/lightning_logs/hfsq128_512_q2
-        ├── checkpoints
-        │   ├── epoch_050.ckpt
-        │   ├── epoch_100.ckpt
-        │   ├── epoch_150.ckpt
-        │   └── epoch_200.ckpt
-        └── hfsq128_512_q2.yaml
+python hfsq.py --config configs/hfsq.yaml
 ```
 
 ### Stage Two: ReactDance
 
 ```bash
-python reactdance.py --config ./configs/reactdance.yaml --mode train
+python reactdance.py --config configs/reactdance.yaml
 ```
 
-After both HFSQ and ReactDance are trained, the results directories will look like:
+Each entry point loads the config shown above by default. To change the batch size, optimizer, learning rate, training length, or GPU settings, edit the YAML or pass another file with `--config`. Stage Two uses the latest HFSQ checkpoint by default. Set `hfsq_checkpoint` in the YAML to select a specific one.
 
-```text
-results/training
-    ├── HFSQ/lightning_logs/hfsq128_512_q2
-    │   ├── normalizers
-    │   │   └── epoch_200
-    │   │       └── normalizer.pt
-    │   ├── checkpoints
-    │   │   ├── epoch_050.ckpt
-    │   │   ├── epoch_100.ckpt
-    │   │   ├── epoch_150.ckpt
-    │   │   └── epoch_200.ckpt
-    │   └── hfsq128_512_q2.yaml
-    └── ReactDance/lightning_logs/reactdance
-        ├── checkpoints
-        │   ├── epoch_050.ckpt
-        │   ├── epoch_100.ckpt
-        │   ├── epoch_150.ckpt
-        |   ├── ...
-        │   └── epoch_500.ckpt
-        ├── hfsq128_512_q2.yaml
-        └── reactdance.yaml
+Runs are saved under `results/lightning_log/<Model>/version_N/`. Each save writes a numbered weight file and a matching `.state.pt` training-state file. Keep both and pass `--resume` the `.ckpt` path to continue a run. Inference only needs the `.ckpt`.
+
+```bash
+tensorboard --logdir results/lightning_log
 ```
 
 ---
 
 ## Inference
 
-### Stage One: HFSQ Reconstruction
-
-1. Put your HFSQ checkpoint in `data-test-checkpoint` in`results/training/HFSQ/lightning_logs/hfsq128_512_q2/hfsq128_512_q2.yaml`.
-2. Set it as `HFSQ_config` in `configs/reactdance.yaml`.
-
-Then run:
+These commands reconstruct or generate all 34 sequences in the test set using the released checkpoints.
 
 ```bash
-python hfsq.py --config ./`results/training/HFSQ/lightning_logs/hfsq128_512_q2/hfsq128_512_q2.yaml` --mode duet_sample
+python hfsq.py --mode sample --checkpoint results/lightning_log/HFSQ/version_0/hfsq.ckpt
+python reactdance.py --mode sample --checkpoint results/lightning_log/ReactDance/version_0/reactdance.ckpt
 ```
 
-Then the reconsturcted motion files and visualizations are available in
-
-```text
-results/generated/HFSQ/hfsq128_512_q2/epoch_200.ckpt/samples/duet/
-    ├── pos3d_npy
-    └── videos
-```
-
-### Stage Two: ReactDance Sampling
-
-1. Put your ReactDance checkpoint in `data-test-checkpoint` in
-   `results/training/ReactDance/lightning_logs/reactdance/reactdance.yaml`.
-
-Then run:
-
-```bash
-python reactdance.py --config ./`results/training/ReactDance/lightning_logs/reactdance/reactdance.yaml` --mode sample
-```
-
-Then the sampled motion files and visualizations are available in
-
-```text
-results/generated/ReactDance/reactdance/epoch_500.ckpt/samples/
-    ├── pos3d_npy
-    └── videos
-```
+Results are written to `results/lightning_log/<Model>/evaluation/version_0/<checkpoint-name>/`. The `pos3d_npy/` directory contains paired motion files, with `*_00.npy` for the follower and `*_01.npy` for the leader.
 
 ---
 
-## Evaluation
+## Evaluation and Rendering
 
-### Solo Metrics
-
-`utils/metrics.py` evaluates **solo** motion quality on `pos3d_npy` folders (FID_k / FID_g/ DIV_k / DIV_g / BA).
-
-1. Edit the following variables in `utils/metrics.py` (near the bottom):
-
-   - `gt_root` (default: `data_lazy/motion/pos3d/test`)
-   - `music_root` (default: `data_lazy/music/feature/test`)
-   - `pred_roots`: a list of `pos3d_npy` folders you want to evaluate.
-
-   The script already contains example entries:
-
-   - `results/generated/HFSQ/hfsq128_512_q2/epoch_200.ckpt/samples/duet/pos3d_npy` (HFSQ reconstruction)
-   - `results/generated/ReactDance/reactdance/epoch_500.ckpt/samples/pos3d_npy` (ReactDance sampling)
-2. Run:
+Inference writes the full-test-set metrics to `metrics.json`. Use the commands below to recompute metrics or render the full test set from saved predictions. Rendered MP4s are saved in `videos/` alongside the motion files.
 
 ```bash
-python utils/metrics.py
-```
+python hfsq.py --mode evaluate --checkpoint results/lightning_log/HFSQ/version_0/hfsq.ckpt
+python reactdance.py --mode evaluate --checkpoint results/lightning_log/ReactDance/version_0/reactdance.ckpt
 
-### Duet Metrics
-
-`utils/metrics_duet.py` evaluates **duet interaction** metrics on `pos3d_npy` folders (FID_cd / DIV_cd / MPJPE / MPJVE / Jitter / BE).
-
-1. Edit `gt_root` and `pred_roots` in `utils/metrics_duet.py` (near the bottom). Each `pred_root` should point to a `pos3d_npy` folder that contains paired files:
-
-   - follower: `*_00.npy`
-   - leader: `*_01.npy`
-2. Run:
-
-```bash
-python utils/metrics_duet.py
+python hfsq.py --mode render --checkpoint results/lightning_log/HFSQ/version_0/hfsq.ckpt
+python reactdance.py --mode render --checkpoint results/lightning_log/ReactDance/version_0/reactdance.ckpt
 ```
 
 ## Citation

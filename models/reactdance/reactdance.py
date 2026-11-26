@@ -1,6 +1,7 @@
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 from models.nets.nn import get_subsequent_mask
 from models.gaussian.GaussianDiffusion import GaussianDiffusion
 from models.reactdance.denoiser import ReactDance_Denoiser
@@ -18,6 +19,7 @@ class ReactDance(nn.Module):
         self.latent_emb_dim = getattr(config, 'n_embd', 512)  # 假设默认值为 512，根据实际情况调整
         self.prior_mode = getattr(config, 'prior_mode', "all_quantizeds")
         self.attn_mask_type = getattr(config, 'attn_mask_type', "interval")
+        self.random_block_phase = getattr(config, 'random_block_phase', False)
 
         self.activation = 'gelu'
         self.diffusion_steps = getattr(config, 'diffusion_steps', 1000)
@@ -83,13 +85,19 @@ class ReactDance(nn.Module):
         x_start: (x_start_up, x_start_down, x_start_transl)
         attention, change ([b, d, n]) to ([b, n, d])
         '''
+        phase_offset = int(torch.randint(1,self.token_block_size,()).item()) if self.training and self.random_block_phase else 0
+        temporal_mask = get_subsequent_mask(cond_tuple[0].shape[1]//self.temp_ds_rate, self.token_block_size, self.attn_mask_type, device=cond_tuple[0].device)
+        if phase_offset:
+            indices = (torch.arange(cond_tuple[0].shape[1]//self.temp_ds_rate,device=cond_tuple[0].device)+phase_offset)//self.token_block_size
+            temporal_mask = indices[:,None] != indices[None,:]
         preds, losses, metrics = self.diffusion.forward(
             x_start=x_start,
             cond_tuple=cond_tuple,
             motion_target=motion_target,
             train_mode="train" if self.training else "val",
             model_kwargs={
-                "mask":self.temporal_mask,
+                "mask":temporal_mask,
+                "phase_offset":phase_offset,
                 "m_cond_drop_prob": self.m_cond_drop_prob if self.training else 0,
                 "p_cond_drop_prob": self.p_cond_drop_prob if self.training else 0,
                 "token_block_size": self.token_block_size,
@@ -102,7 +110,7 @@ class ReactDance(nn.Module):
     def sample(self, use_EMA=False, cond_tuple=None, **kwargs):
         B = cond_tuple[0].shape[0]
         seq_len = cond_tuple[0].size(1)//self.temp_ds_rate
-        temporal_mask = get_subsequent_mask(seq_len=seq_len, token_block_size=self.token_block_size, attn_mask_type=self.attn_mask_type)
+        temporal_mask = get_subsequent_mask(seq_len=seq_len, token_block_size=self.token_block_size, attn_mask_type=self.attn_mask_type, device=cond_tuple[0].device)
         
         pred_pose = self.diffusion.ddim_sample_loop(
         # pred_pose = self.diffusion.p_sample_loop(
@@ -121,7 +129,7 @@ class ReactDance(nn.Module):
     def sample_cfg(self, use_EMA=False, cond_tuple=None, pm_guidance_weight=5,body_parts=['up', 'down', 'tr'], **kwargs):
         B = cond_tuple[0].shape[0]
         seq_len = cond_tuple[0].size(1)//self.temp_ds_rate
-        temporal_mask = get_subsequent_mask(seq_len=seq_len, token_block_size=self.token_block_size, attn_mask_type=self.attn_mask_type)
+        temporal_mask = get_subsequent_mask(seq_len=seq_len, token_block_size=self.token_block_size, attn_mask_type=self.attn_mask_type, device=cond_tuple[0].device)
         
         pred_pose = self.diffusion.ddim_sample_loop(
         # pred_pose = self.diffusion.p_sample_loop(

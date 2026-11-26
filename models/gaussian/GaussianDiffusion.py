@@ -163,9 +163,9 @@ class GaussianDiffusion(nn.Module):
         self.latent_loss_manager = LatentLoss()
         
         # shape 配置项
-        self.latent_loss_weight = torch.tensor(getattr(config, 'latent_loss_weight', [2., 1.]), device='cuda')
-        self.tr_latent_loss_weight = torch.tensor(getattr(config, 'tr_latent_loss_weight', [2., 1.]), device='cuda')
-        self.pos_allq_shape = getattr(config, 'pos_allq_shape', [8, 3, 128])
+        self.register_buffer('latent_loss_weight', torch.tensor(getattr(config, 'latent_loss_weight', [2., 1.])), persistent=False)
+        self.register_buffer('tr_latent_loss_weight', torch.tensor(getattr(config, 'tr_latent_loss_weight', [2., 1.])), persistent=False)
+        self.pos_allq_shape = list(getattr(config, 'pos_allq_shape', [8, 3, 128]))
         self.pos_allq_shape[-1] //= 3
         self.clip_scaler = getattr(config, 'clip_scaler', 1.0)
             

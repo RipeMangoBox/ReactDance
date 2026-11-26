@@ -44,7 +44,7 @@ class LatentLoss(nn.Module):
             self.accum_loss()
             
     def accum_loss(self):
-        loss = torch.tensor(0, dtype=torch.float32, device='cuda')
+        loss = next(iter(self.losses.values())).new_zeros(())
         self.losses.pop('latent_loss_total', 0)
         for term in self.losses.keys():
             loss += self.losses[term]
@@ -99,8 +99,8 @@ class GeometricLoss(nn.Module):
         self.JA_thresh = 0.1
 
         thres = 0.001
-        self.velfactor = torch.Tensor([thres, thres, thres, thres]).to("cuda")
-        self.heightfactor = torch.Tensor([0.12, 0.05, 0.12, 0.05]).to("cuda")
+        self.register_buffer('velfactor', torch.tensor([thres]*4), persistent=False)
+        self.register_buffer('heightfactor', torch.tensor([0.12, 0.05, 0.12, 0.05]), persistent=False)
         self.losses = {}
         self.metrics = {}
         self.use_ROT6D_RECON = self._enabled("rot6d_recon")
@@ -469,7 +469,7 @@ class GeometricLoss(nn.Module):
         self.losses[self.name + "rot6d_acc"] = rot_acc_loss
         
     def accum_loss(self):
-        loss = torch.tensor(0, dtype=torch.float32, device='cuda')
+        loss = next(iter(self.losses.values())).new_zeros(())
         self.losses.pop('geometry_loss_total', 0)
         for term in self.losses.keys():
             loss += self.losses[term] * self.weights[term.split('_')[-1]]

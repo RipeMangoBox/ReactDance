@@ -31,7 +31,7 @@ _HAS_FUSED_ATTN = hasattr(torch.nn.functional, 'scaled_dot_product_attention')
 if 'TIMM_FUSED_ATTN' in os.environ:
     _USE_FUSED_ATTN = int(os.environ['TIMM_FUSED_ATTN'])
 else:
-    _USE_FUSED_ATTN = 1  # 0 == off, 1 == on (for tested use), 2 == on (for experimental use)
+    _USE_FUSED_ATTN = 0  # 0 == off, 1 == on (for tested use), 2 == on (for experimental use)
 
 
 def is_no_jit():
@@ -128,7 +128,6 @@ class set_layer_config:
 
 
 def use_fused_attn(experimental: bool = False) -> bool:
-    return False
     # NOTE: ONNX export cannot handle F.scaled_dot_product_attention as of pytorch 2.0
     if not _HAS_FUSED_ATTN or _EXPORTABLE:
         return False

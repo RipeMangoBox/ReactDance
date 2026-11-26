@@ -51,8 +51,11 @@ def expand_segments(segment_features: Tensor, segment_size: int, original_seq_le
     
     return expanded[:, :original_seq_len, :]
 
-def blockwise_pooling(x: Tensor, segment_size: int = 60) -> Tensor:
+def blockwise_pooling(x: Tensor, segment_size: int = 60, phase_offset=0) -> Tensor:
     seqlen = x.size(1)
+    if phase_offset:
+        boundaries = [0] + list(range(segment_size-phase_offset,seqlen,segment_size)) + [seqlen]
+        return torch.cat([x[:,a:b].mean(1,keepdim=True).expand(-1,b-a,-1) for a,b in zip(boundaries,boundaries[1:])],dim=1)
     if segment_size == 1:
         return x
     elif segment_size == -1 or seqlen == segment_size:
@@ -561,22 +564,23 @@ class ReactDance_Denoiser(nn.Module):#feed pose cond/uncond; feed music cond/unc
         token_block_size: int = 60,
         **kwargs,
     ):
+        phase_offset = kwargs.get('phase_offset', 0)
         cond = self.feature_encoder(cond_tuple, joint_num=3, attn_mask=mask)
         m_cond, p_cond = torch.split(cond, cond.shape[-1]//2, dim=-1)
         batch_size, seqlen, device = x.shape[0], x.shape[1], x.device
 
         # Project to latent space
         x = self.input_projection(x)
-        x = self.abs_pos_encoding(x, token_block_size)
+        x = self.abs_pos_encoding(x, token_block_size, phase_offset=phase_offset)
         
         # --- Process Pose (p) and Music (m) Conditions ---
-        p_cond_tokens = self.p_cond_encoder(self.abs_pos_encoding(self.p_cond_projection(p_cond), token_block_size))
-        m_cond_tokens = self.m_cond_encoder(self.abs_pos_encoding(self.m_cond_projection(m_cond), token_block_size))
+        p_cond_tokens = self.p_cond_encoder(self.abs_pos_encoding(self.p_cond_projection(p_cond), token_block_size, phase_offset=phase_offset))
+        m_cond_tokens = self.m_cond_encoder(self.abs_pos_encoding(self.m_cond_projection(m_cond), token_block_size, phase_offset=phase_offset))
         
-        p_cond_blockwise_hidden = blockwise_pooling(p_cond_tokens, token_block_size)
+        p_cond_blockwise_hidden = blockwise_pooling(p_cond_tokens, token_block_size, phase_offset)
         p_cond_hidden = self.non_attn_p_cond_projection(p_cond_blockwise_hidden)
         
-        m_cond_blockwise_hidden = blockwise_pooling(m_cond_tokens, token_block_size)
+        m_cond_blockwise_hidden = blockwise_pooling(m_cond_tokens, token_block_size, phase_offset)
         m_cond_hidden = self.non_attn_m_cond_projection(m_cond_blockwise_hidden)
 
         # --- Apply Guidance Dropout based on self.guidance_drop_mode ---

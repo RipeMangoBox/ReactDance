@@ -175,7 +175,7 @@ class PositionalEncoding(nn.Module):
 
         self.register_buffer('pe', pe)
 
-    def forward(self, x, token_block_size = 60):
+    def forward(self, x, token_block_size = 60, phase_offset=0):
         """
         Args:
             x: Tensor
@@ -194,7 +194,7 @@ class PositionalEncoding(nn.Module):
             base_pe = self.pe[:seq_len, :]
         else:
             # 计算每个位置的块基索引
-            block_base = (torch.arange(seq_len, device=x.device) % token_block_size)
+            block_base = ((torch.arange(seq_len, device=x.device) + phase_offset) % token_block_size)
             # 获取块基准位置编码
             # (注意：更高效的写法是 self.pe[block_base]，但保持你原有的逻辑)
             base_pe = self.pe[block_base] # [seq_len, d_model]

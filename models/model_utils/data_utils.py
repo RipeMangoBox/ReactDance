@@ -67,7 +67,9 @@ class MotionNormalizerTorch:
                  calculator="Z_SCORE",
                  hfsq_normalizer_file=None,
                  music_normalizer_file='data_lazy/music/music_normalizer.pt',
-                 normalizer_device="cuda"):
+                 normalizer_device="cpu",
+                 pos3df_normalizer_file="data_lazy/motion/pos3df_normalizer.pt",
+                 pos3dl_normalizer_file="data_lazy/motion/pos3dl_normalizer.pt"):
         
         self.calculator = calculator  # Store calculator type
         self.mean_type = "-mean" 
@@ -75,14 +77,14 @@ class MotionNormalizerTorch:
         
         self.hfsq_normalizer_file = hfsq_normalizer_file
         self.music_normalizer_file = music_normalizer_file
-        self.pos3df_normalizer_file = 'data_lazy/motion/pos3df_normalizer.pt'
-        self.pos3dl_normalizer_file = 'data_lazy/motion/pos3dl_normalizer.pt'
+        self.pos3df_normalizer_file = pos3df_normalizer_file
+        self.pos3dl_normalizer_file = pos3dl_normalizer_file
         self.device = normalizer_device
         self.init()
         
     def _normalizer_loading(self, normalizer_file):
         if os.path.exists(normalizer_file):
-            normalizer_dict = torch.load(normalizer_file, map_location=self.device)
+            normalizer_dict = torch.load(normalizer_file, map_location=self.device, weights_only=False)
         else:
             normalizer_dict = {}
         return normalizer_dict

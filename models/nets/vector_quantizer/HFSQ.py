@@ -300,6 +300,7 @@ class ResidualFSQ(Module):
         output_transpose = True,
         no_metrics = False,
         rand_quantize_dropout_fixed_seed = None,
+        quantize_dropout_decision = None,
     ):
         num_quant, quant_dropout_multiple_of, device = self.num_quantizers, self.quantize_dropout_multiple_of, x.device
 
@@ -329,6 +330,13 @@ class ResidualFSQ(Module):
         all_metrics = []
         
         should_quantize_dropout = self.training and random.random() < self.quantize_dropout_prob
+        if quantize_dropout_decision is not None:
+            should_quantize_dropout = self.training and quantize_dropout_decision
+        elif self.training and is_distributed():
+            # Every rank must enter the seed collective, or skip it, together.
+            dropout_flag = torch.tensor(int(should_quantize_dropout), device=device)
+            dist.broadcast(dropout_flag, src=0)
+            should_quantize_dropout = bool(dropout_flag.item())
 
         if should_quantize_dropout:
             # check if seed is manually passed in
@@ -609,8 +617,22 @@ class HFSQ(Module):
             no_metrics = no_metrics,
         )
 
-        # invoke residual vq on each group
-        out = tuple(rfsq(chunk, **forward_kwargs) for rfsq, chunk in zip(self.rfsqs, x))
+        # Share all group dropout decisions in one collective per body part.
+        if self.training and is_distributed():
+            seeds = torch.randint(0, 2**31 - 1, (self.groups,), device=x[0].device)
+            dist.broadcast(seeds, src=0)
+            outputs = []
+            for rfsq, chunk, seed in zip(self.rfsqs, x, seeds.tolist()):
+                generator = random.Random(seed)
+                decision = generator.random() < rfsq.quantize_dropout_prob
+                outputs.append(rfsq(
+                    chunk, quantize_dropout_decision=decision,
+                    rand_quantize_dropout_fixed_seed=generator.getrandbits(31),
+                    **forward_kwargs,
+                ))
+            out = tuple(outputs)
+        else:
+            out = tuple(rfsq(chunk, **forward_kwargs) for rfsq, chunk in zip(self.rfsqs, x))
         out = tuple(zip(*out))
         
         # otherwise, get all the zipped outputs and combine them

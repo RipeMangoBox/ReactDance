@@ -3,25 +3,25 @@ import torch.nn as nn
 from models.reactdance.layers.structure_utils import zero_module
 from .transformer import get_attn_block_backend
         
-def get_subsequent_mask(seq_len, token_block_size=60, attn_mask_type="interval"):
+def get_subsequent_mask(seq_len, token_block_size=60, attn_mask_type="interval", device=None):
     if attn_mask_type is None or attn_mask_type.lower() == "none":
         return None
     if attn_mask_type == "interval":
         # Create block indices for positions up to block_size
-        idx = torch.arange(seq_len, device='cuda') // token_block_size
+        idx = torch.arange(seq_len, device=device) // token_block_size
 
         # Initialize the mask with ones
-        mask = torch.ones((seq_len, seq_len), device=torch.device('cuda'))
+        mask = torch.ones((seq_len, seq_len), device=device)
 
         # Set the mask to 0 where block indices are equal (same block), 1 elsewhere
         mask = (idx[:, None] == idx[None, :]).float()
         
     elif attn_mask_type == "triangle_interval":
         # Block indices for each position
-        idx = torch.arange(seq_len, device=torch.device('cuda')) // token_block_size
+        idx = torch.arange(seq_len, device=device) // token_block_size
         # Row and column indices for broadcasting
-        j = torch.arange(seq_len, device=torch.device('cuda'))[None, :]  # Shape: (1, seq_len)
-        i = torch.arange(seq_len, device=torch.device('cuda'))[:, None]  # Shape: (seq_len, 1)
+        j = torch.arange(seq_len, device=device)[None, :]  # Shape: (1, seq_len)
+        i = torch.arange(seq_len, device=device)[:, None]  # Shape: (seq_len, 1)
         # Condition: same block AND j <= i
         condition = (idx[None, :] == idx[:, None]) & (j <= i)
         # Mask: 0 where condition is True, 1 where False
@@ -30,15 +30,15 @@ def get_subsequent_mask(seq_len, token_block_size=60, attn_mask_type="interval")
     elif attn_mask_type in ["full", "casual", "diag"]:
         token_block_size -= 1
         if attn_mask_type == "full":
-            mask = torch.ones((seq_len, seq_len), device=torch.device('cuda'))
+            mask = torch.ones((seq_len, seq_len), device=device)
             mask = torch.triu(mask, diagonal=-token_block_size)
             mask = torch.tril(mask, diagonal=token_block_size)
         elif attn_mask_type == "casual":
-            mask = torch.ones((seq_len, seq_len), device=torch.device('cuda'))
+            mask = torch.ones((seq_len, seq_len), device=device)
             mask = torch.triu(mask, diagonal=-token_block_size)
             mask = torch.tril(mask, diagonal=0)
         elif attn_mask_type == "diag":
-            mask = torch.eye(seq_len, seq_len, device=torch.device('cuda'))
+            mask = torch.eye(seq_len, seq_len, device=device)
     else:
         raise ValueError(f"Unknown attn_mask_type: {attn_mask_type}")
     

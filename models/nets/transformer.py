@@ -138,8 +138,8 @@ class SelfAttention(nn.Module):
         if self.fused_attn:
             x = F.scaled_dot_product_attention(
                 q, k, v,
-                attn_mask=attn_mask,
-                dropout_p=self.attn_drop.p,
+                attn_mask=(~attn_mask if attn_mask is not None and attn_mask.dtype == torch.bool else attn_mask),
+                dropout_p=self.attn_drop.p if self.training else 0.0,
             )
         else:
             q = q * self.scale
@@ -212,8 +212,8 @@ class SelfAttentionROPE(nn.Module):
         if self.fused_attn:
             x = F.scaled_dot_product_attention(
                 q, k, v,
-                attn_mask=attn_mask,
-                dropout_p=self.attn_drop.p,
+                attn_mask=(~attn_mask if attn_mask is not None and attn_mask.dtype == torch.bool else attn_mask),
+                dropout_p=self.attn_drop.p if self.training else 0.0,
             )
         else:
             q = q * self.scale
@@ -283,8 +283,8 @@ class CrossAttention(nn.Module):
         if self.fused_attn:
             x = F.scaled_dot_product_attention(
                 q, k, v,
-                attn_mask=attn_mask,
-                dropout_p=self.attn_drop.p,
+                attn_mask=(~attn_mask if attn_mask is not None and attn_mask.dtype == torch.bool else attn_mask),
+                dropout_p=self.attn_drop.p if self.training else 0.0,
             )
         else:
             q = q * self.scale
